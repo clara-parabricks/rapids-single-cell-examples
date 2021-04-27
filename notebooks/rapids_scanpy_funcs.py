@@ -408,7 +408,7 @@ def rank_genes_groups(
     reference = groups_order[0]
     if len(groups) == 1:
         raise Exception('Cannot perform logistic regression on a single cluster.')
-    grouping_mask = labels.astype('int').isin(cudf.Series(groups_order))
+    grouping_mask = labels.astype('int').isin(cudf.Series(groups_order).astype('int'))
     grouping = labels.loc[grouping_mask]
     
     X = X[grouping_mask.values, :]  # Indexing with a series causes issues, possibly segfault
@@ -471,7 +471,7 @@ def leiden(adata, resolution=1.0):
 
     """
     # Adjacency graph
-    adjacency = adata.uns['neighbors']['connectivities']
+    adjacency = adata.obsp['connectivities']
     offsets = cudf.Series(adjacency.indptr)
     indices = cudf.Series(adjacency.indices)
     g = cugraph.Graph()

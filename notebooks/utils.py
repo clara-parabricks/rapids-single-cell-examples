@@ -54,6 +54,7 @@ def pca(adata, n_components=50, train_ratio=0.35, n_batches=50, gpu=False):
         embeddings = embeddings.get()
 
     adata.obsm["X_pca"] = embeddings
+    adata.uns['pca'] ={'variance':pca.explained_variance_, 'variance_ratio':pca.explained_variance_ratio_}
     return adata
 
 
