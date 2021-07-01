@@ -1,6 +1,8 @@
 import math
 import numpy as np
 import scipy
+import pandas as pd
+
 
 def pca(adata, n_components=50, train_ratio=0.35, n_batches=50, gpu=False):
 
@@ -38,7 +40,7 @@ def pca(adata, n_components=50, train_ratio=0.35, n_batches=50, gpu=False):
         import numpy as cp
 
     pca = PCA(n_components=n_components).fit(adata.X[:train_size])
-    
+
     embeddings = cp.zeros((adata.X.shape[0], n_components))
     batch_size = int(embeddings.shape[0] / n_batches)
     for batch in range(n_batches):
@@ -49,7 +51,7 @@ def pca(adata, n_components=50, train_ratio=0.35, n_batches=50, gpu=False):
             end_idx = adata.X.shape[0]
 
         embeddings[start_idx:end_idx,:] = cp.asarray(pca.transform(adata.X[start_idx:end_idx]))
-        
+
     if gpu:
         embeddings = embeddings.get()
 
@@ -64,14 +66,14 @@ def tf_idf(filtered_cells):
     Note that the 1 / sum_peaks(i) term isn't included in the standard NLP form of tf-idf, but other single-cell work uses it.
     '''
     inv_sums = 1 / np.array(filtered_cells.sum(axis=1)).ravel()
-    
+
     peak_counts = np.array((filtered_cells > 0).sum(axis=0)).ravel()
     log_inv_peak_freq = np.log1p(filtered_cells.shape[0] / peak_counts)
-    
+
     normalized = filtered_cells.multiply(inv_sums[:, np.newaxis])
     normalized = normalized.multiply(log_inv_peak_freq[np.newaxis, :])
     normalized = scipy.sparse.csr_matrix(normalized)
-    
+
     return normalized
 
 
@@ -80,16 +82,16 @@ def logtf_idf(filtered_cells, pseudocount=10**5):
     Input: 2D numpy.ndarray or 2D sparse matrix with X[i, j] = (binary or continuous) read count for cell i, peak j
     Output: Normalized matrix, where Xp[i, j] = X[i, j] * log(1 + pseudocount/sum_peaks(i)) * log(1 + N_cells/N_cells with peak j)
     Pseudocount should be chosen as a similar order of magnitude as the mean number of reads per cell.
-    ''' 
+    '''
     log_inv_sums = np.log1p(pseudocount / np.array(filtered_cells.sum(axis=1)).ravel())
-    
+
     peak_counts = np.array((filtered_cells > 0).sum(axis=0)).ravel()
     log_inv_peak_freq = np.log1p(filtered_cells.shape[0] / peak_counts)
-    
+
     normalized = filtered_cells.multiply(log_inv_sums[:, np.newaxis])
     normalized = normalized.multiply(log_inv_peak_freq[np.newaxis, :])
     normalized = scipy.sparse.csr_matrix(normalized)
-    
+
     return normalized
 
 
@@ -121,3 +123,4 @@ def filter_peaks(adata, n_top_peaks):
     frequent_peak_idxs = np.argsort(peak_frequency)
     use = frequent_peak_idxs[-n_top_peaks : ]
     return adata[:, use]
+
